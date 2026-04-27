@@ -217,7 +217,11 @@ main {
   border-radius: 8px;
   cursor: crosshair;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  z-index: 5;
+  /* Cytoscape inserts its own canvases inside the container with their
+     own stacking. Force the minimap above all of them so clicks/drags
+     land on us, not cy. */
+  z-index: 100;
+  pointer-events: auto;
 }
 .minimap-label {
   position: absolute;
@@ -228,7 +232,7 @@ main {
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  z-index: 5;
+  z-index: 100;
   pointer-events: none;
 }
 .legend {
@@ -244,7 +248,8 @@ main {
   display: grid;
   gap: 0.3rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-  z-index: 5;
+  z-index: 100;
+  pointer-events: none;
 }
 .legend .row {
   display: flex;
