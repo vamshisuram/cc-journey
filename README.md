@@ -25,7 +25,7 @@ Journey captures this automatically as a **mindmap + timeline** of your conversa
 - **Goals span conversations.** Same conversation = same goal. New conversation? A small LLM call asks "does this continue any recent goal?" and matches if so.
 - **Lazy LLM summaries.** Each node gets a one-line, ≤20-word summary — generated on demand when you actually look at it, then cached.
 - **Two views, same data.**
-  - **Browser** (default): `/journey:journey` starts a local web UI with a Cytoscape mindmap, draggable minimap, timeline tab, click-to-detail, and live SSE updates.
+  - **Browser** (default): `/journey:open` starts a local web UI with a Cytoscape mindmap, draggable minimap, timeline tab, click-to-detail, and live SSE updates.
   - **Terminal**: `/journey:mindmap`, `/journey:timeline`, `/journey:back [N]`, `/journey:goals` for quick at-a-glance views without leaving the CLI.
 
 ## Install
@@ -82,7 +82,7 @@ All optional — sane defaults out of the box.
 Slash commands accept `KEY=VALUE` overrides:
 
 ```
-/journey:journey CLAUDE_PLUGIN_DATA=/tmp/some-other-data JOURNEY_PORT=8080
+/journey:open CLAUDE_PLUGIN_DATA=/tmp/some-other-data JOURNEY_PORT=8080
 ```
 
 ## Privacy
@@ -107,8 +107,7 @@ All commands are namespaced under `journey:` after install.
 
 | Command | What it does |
 |---|---|
-| `/journey:journey` | **Start the web UI** (default action — mindmap, timeline, goals all live in the browser at http://localhost:7777) |
-| `/journey:serve` | Same as above (alias) |
+| `/journey:open` | **Open the web UI** (mindmap, timeline, goals all live in the browser at http://localhost:7777) |
 | `/journey:stop` | Stop the local web UI |
 | `/journey:goals` | Terminal: list all known goals (active marked `*`) |
 | `/journey:mindmap` | Terminal: ASCII mindmap of the active goal |
@@ -118,12 +117,12 @@ All commands are namespaced under `journey:` after install.
 All commands accept `KEY=VALUE` overrides, e.g.:
 
 ```
-/journey:journey CLAUDE_PLUGIN_DATA=/tmp/journey-demo JOURNEY_PORT=8080
+/journey:open CLAUDE_PLUGIN_DATA=/tmp/journey-demo JOURNEY_PORT=8080
 ```
 
 ## Browser UI
 
-Run `/journey:journey` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
+Run `/journey:open` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
 
 ### Homepage — every goal you've worked on
 
