@@ -337,8 +337,9 @@ function renderMindmap(host, tree) {
       {
         selector: "edge",
         style: {
-          width: 1.5,
-          "line-color": theme.border,
+          width: 2,
+          "line-color": theme.muted,
+          opacity: 0.55,
           "curve-style": "taxi",
           "taxi-direction": "downward",
           "taxi-turn": 30,
@@ -478,40 +479,79 @@ function attachMinimap(host, cy) {
     });
     ctx.globalAlpha = 1;
 
+    // Viewport rect — clamp to minimap bounds so when the viewport
+    // is bigger than the tree (zoomed-out / small tree), the rect
+    // stays inside the minimap and remains a meaningful drag handle.
     const ext = cy.extent();
-    ctx.strokeStyle = "rgba(122,162,247,0.8)";
-    ctx.fillStyle = "rgba(122,162,247,0.12)";
-    ctx.lineWidth = 1;
     const rx = ext.x1 * scale + offX;
     const ry = ext.y1 * scale + offY;
     const rw = (ext.x2 - ext.x1) * scale;
     const rh = (ext.y2 - ext.y1) * scale;
-    ctx.fillRect(rx, ry, rw, rh);
-    ctx.strokeRect(rx, ry, rw, rh);
+    const cx = Math.max(0, rx);
+    const cy0 = Math.max(0, ry);
+    const cw = Math.min(W, rx + rw) - cx;
+    const ch = Math.min(H, ry + rh) - cy0;
+    if (cw > 0 && ch > 0) {
+      ctx.fillStyle = "rgba(122,162,247,0.18)";
+      ctx.strokeStyle = "rgba(122,162,247,0.95)";
+      ctx.lineWidth = 1.5;
+      ctx.fillRect(cx, cy0, cw, ch);
+      ctx.strokeRect(cx, cy0, cw, ch);
+    }
   }
 
-  function panFromEvent(e) {
+  // dragOffset: pixel delta from box-center to mousedown point in
+  // minimap coords. Preserved across mousemoves so the box stays
+  // anchored to the cursor (drag-handle behavior). Null = jump-to-center.
+  let dragOffset = null;
+
+  function mmGeom() {
     const rect = mm.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
     const bb = cy.elements().boundingBox();
-    if (!bb || bb.w === 0) return;
+    if (!bb || bb.w === 0) return null;
     const pad = 8;
     const W = rect.width;
     const H = rect.height;
     const scale = Math.min((W - 2 * pad) / bb.w, (H - 2 * pad) / bb.h);
     const offX = pad - bb.x1 * scale + (W - 2 * pad - bb.w * scale) / 2;
     const offY = pad - bb.y1 * scale + (H - 2 * pad - bb.h * scale) / 2;
-    const worldX = (mx - offX) / scale;
-    const worldY = (my - offY) / scale;
+    return { rect, bb, pad, W, H, scale, offX, offY };
+  }
+
+  function panFromEvent(e) {
+    const g = mmGeom();
+    if (!g) return;
+    const mx = e.clientX - g.rect.left;
+    const my = e.clientY - g.rect.top;
+    const targetMx = mx - (dragOffset?.dx || 0);
+    const targetMy = my - (dragOffset?.dy || 0);
+    const worldX = (targetMx - g.offX) / g.scale;
+    const worldY = (targetMy - g.offY) / g.scale;
     const z = cy.zoom();
     cy.pan({
       x: -worldX * z + cy.width() / 2,
       y: -worldY * z + cy.height() / 2,
     });
   }
+
   let dragging = false;
   mm.addEventListener("mousedown", (e) => {
+    const g = mmGeom();
+    if (g) {
+      const mx = e.clientX - g.rect.left;
+      const my = e.clientY - g.rect.top;
+      const ext = cy.extent();
+      const x1 = ext.x1 * g.scale + g.offX;
+      const y1 = ext.y1 * g.scale + g.offY;
+      const x2 = ext.x2 * g.scale + g.offX;
+      const y2 = ext.y2 * g.scale + g.offY;
+      const inside = mx >= x1 && mx <= x2 && my >= y1 && my <= y2;
+      if (inside) {
+        dragOffset = { dx: mx - (x1 + x2) / 2, dy: my - (y1 + y2) / 2 };
+      } else {
+        dragOffset = null;
+      }
+    }
     dragging = true;
     panFromEvent(e);
   });
@@ -520,6 +560,7 @@ function attachMinimap(host, cy) {
   });
   window.addEventListener("mouseup", () => {
     dragging = false;
+    dragOffset = null;
   });
 
   let drawScheduled = false;
