@@ -8,19 +8,12 @@
   </head>
   <body>
     <header>
-      <h1>Journey <span class="muted">/ placeholder</span></h1>
-      <p class="muted">
-        v0.1 server is up. The Cytoscape mindmap UI lands in the next iteration.
-      </p>
+      <a href="#/" class="brand">Journey</a>
+      <nav id="crumbs"></nav>
+      <span class="status-dot" id="sse-dot" title="live updates"></span>
     </header>
-    <section>
-      <h2>Goals</h2>
-      <pre id="goals">loading…</pre>
-    </section>
-    <section>
-      <h2>Live events</h2>
-      <pre id="events">(waiting for store changes — capture a turn to see them)</pre>
-    </section>
+    <main id="view"></main>
+    <script src="/vendor/cytoscape.min.js"></script>
     <script src="/app.js"></script>
   </body>
 </html>
