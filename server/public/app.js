@@ -248,14 +248,29 @@ function frontierId(nodes) {
   return live[live.length - 1]?.id;
 }
 
+function themeColors() {
+  const cs = getComputedStyle(document.documentElement);
+  const v = (n, fb) => cs.getPropertyValue(n).trim() || fb;
+  return {
+    bg: v("--bg", "#0e0f12"),
+    surface: v("--surface", "#16181d"),
+    surface2: v("--surface-2", "#1d2027"),
+    text: v("--text", "#e6e8ee"),
+    muted: v("--muted", "#8b91a0"),
+    border: v("--border", "#2a2e38"),
+  };
+}
+
 function renderMindmap(host, tree) {
   const front = frontierId(tree.nodes);
+  const theme = themeColors();
   const elements = [];
   for (const n of tree.nodes) {
+    const mark = KIND_MARK[n.kind] || "·";
     elements.push({
       data: {
         id: n.id,
-        label: shortSummary(n),
+        label: `${mark}  ${shortSummary(n)}`,
         kind: n.kind,
         frontier: n.id === front,
       },
@@ -272,68 +287,78 @@ function renderMindmap(host, tree) {
       {
         selector: "node",
         style: {
-          "background-color": (e) => KIND_COLOR[e.data("kind")] || "#7aa2f7",
+          shape: "round-rectangle",
+          "background-color": theme.surface,
+          "background-opacity": 1,
+          "border-width": 2,
+          "border-color": (e) => KIND_COLOR[e.data("kind")] || theme.border,
+          width: "label",
+          height: "label",
+          padding: "10px",
           label: "data(label)",
-          color: "#e6e8ee",
-          "font-size": "11px",
-          "font-family": "ui-sans-serif, system-ui, sans-serif",
+          color: theme.text,
+          "font-size": "12px",
+          "font-family":
+            "ui-sans-serif, -apple-system, system-ui, sans-serif",
           "text-valign": "center",
-          "text-halign": "right",
-          "text-margin-x": 8,
+          "text-halign": "center",
           "text-wrap": "wrap",
-          "text-max-width": 220,
-          width: 14,
-          height: 14,
-          "border-width": 0,
+          "text-max-width": "240px",
+          "line-height": 1.35,
         },
       },
       {
         selector: 'node[kind = "root"]',
-        style: { width: 22, height: 22, "font-weight": 600 },
+        style: {
+          "font-weight": 600,
+          "font-size": "13px",
+          "border-width": 3,
+          padding: "12px",
+        },
       },
       {
         selector: 'node[kind = "deadend"]',
         style: {
-          "background-color": "#f7768e",
-          shape: "diamond",
-          opacity: 0.5,
-          color: "#8b91a0",
+          opacity: 0.55,
+          color: theme.muted,
+          "border-style": "dashed",
         },
-      },
-      {
-        selector: 'node[kind = "pivot"]',
-        style: { shape: "triangle", "background-color": "#e0af68" },
       },
       {
         selector: "node[?frontier]",
         style: {
-          "border-width": 3,
           "border-color": "#9ece6a",
-          "border-opacity": 1,
+          "border-width": 3,
+          "shadow-blur": 14,
+          "shadow-color": "#9ece6a",
+          "shadow-opacity": 0.6,
         },
       },
       {
         selector: "edge",
         style: {
           width: 1.5,
-          "line-color": "#2a2e38",
-          "curve-style": "bezier",
+          "line-color": theme.border,
+          "curve-style": "taxi",
+          "taxi-direction": "downward",
+          "taxi-turn": 30,
           "target-arrow-shape": "none",
         },
       },
       {
         selector: ":selected",
         style: {
-          "border-width": 3,
           "border-color": "#7aa2f7",
+          "border-width": 3,
         },
       },
     ],
     layout: {
       name: "breadthfirst",
       directed: true,
-      spacingFactor: 1.4,
-      padding: 30,
+      spacingFactor: 1.3,
+      padding: 40,
+      nodeDimensionsIncludeLabels: true,
     },
   });
 
@@ -403,7 +428,8 @@ function attachMinimap(host, cy) {
 
     ctx.clearRect(0, 0, W, H);
 
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    const theme = themeColors();
+    ctx.strokeStyle = theme.border;
     ctx.lineWidth = 0.6;
     cy.edges().forEach((e) => {
       const s = e.source().position();

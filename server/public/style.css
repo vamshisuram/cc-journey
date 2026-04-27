@@ -212,11 +212,11 @@ main {
   bottom: 14px;
   width: 220px;
   height: 150px;
-  background: rgba(22, 24, 29, 0.85);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: crosshair;
-  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   z-index: 5;
 }
 .minimap-label {
@@ -235,15 +235,15 @@ main {
   position: absolute;
   left: 14px;
   bottom: 14px;
-  background: rgba(22, 24, 29, 0.85);
+  background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   padding: 0.5rem 0.75rem;
   font-size: 0.75rem;
   color: var(--muted);
   display: grid;
-  gap: 0.25rem;
-  backdrop-filter: blur(4px);
+  gap: 0.3rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   z-index: 5;
 }
 .legend .row {
