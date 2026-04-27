@@ -8,9 +8,10 @@ import {
   readIndex,
   recentGoals,
   attachSessionToGoal,
+  setGoalTitle,
 } from "../lib/store.mjs";
-import { classifyTurn, previewPrompt } from "../lib/detect.mjs";
-import { llm, PROMPTS } from "../lib/llm.mjs";
+import { classifyTurnWithLLM, previewPrompt } from "../lib/detect.mjs";
+import { llm, PROMPTS, truncWords } from "../lib/llm.mjs";
 
 function readStdin() {
   try {
@@ -61,7 +62,7 @@ if (!goal) {
 
 const tree = readTree(goal.id);
 const prior = findFrontier(tree);
-const { kind, pivot_signal } = classifyTurn(prompt, prior);
+const { kind, pivot_signal } = await classifyTurnWithLLM(prompt, prior, llm);
 
 appendNode(goal.id, {
   conversation_id: sessionId,
@@ -76,5 +77,18 @@ appendNode(goal.id, {
     },
   },
 });
+
+// First node in a fresh goal — give it a real title so terminal /journey
+// and homepage cards show something meaningful immediately.
+const treeAfter = readTree(goal.id);
+if (treeAfter.nodes.length === 1 && goal.title === "(untitled goal)") {
+  try {
+    const raw = await llm(PROMPTS.title(prompt), { maxTokens: 40 });
+    const title = truncWords(raw.replace(/^["']|["']$/g, ""), 8);
+    if (title) setGoalTitle(goal.id, title);
+  } catch {
+    // LLM unavailable — leave as untitled; frontend will fill on view
+  }
+}
 
 process.exit(0);
