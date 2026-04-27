@@ -1,0 +1,6 @@
+{
+  "name": "journey",
+  "description": "Capture conversation states as a tree; render mindmap and timeline views of how thinking evolved across sessions and goals.",
+  "version": "0.1.0",
+  "author": { "name": "vamshi" }
+}
