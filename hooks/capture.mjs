@@ -1,7 +1,16 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
-import { getActiveGoalForSession, appendNode, readTree, findFrontier } from "../lib/store.mjs";
+import {
+  getActiveGoalForSession,
+  appendNode,
+  readTree,
+  findFrontier,
+  readIndex,
+  recentGoals,
+  attachSessionToGoal,
+} from "../lib/store.mjs";
 import { classifyTurn, previewPrompt } from "../lib/detect.mjs";
+import { llm, PROMPTS } from "../lib/llm.mjs";
 
 function readStdin() {
   try {
@@ -24,7 +33,32 @@ const projectDir = payload.cwd || process.env.CLAUDE_PROJECT_DIR || process.cwd(
 const prompt = payload.prompt || "";
 if (!prompt.trim()) process.exit(0);
 
-const goal = getActiveGoalForSession(sessionId, projectDir);
+const idx = readIndex();
+let goal = idx.goals.find(
+  (g) => g.status === "active" && g.conversation_ids.includes(sessionId),
+);
+
+if (!goal) {
+  // New session — try to match against recent goals before creating a new one.
+  // LLM call is allowed to fail silently; we fall through to creating a new goal.
+  const candidates = recentGoals({ maxAgeDays: 14, limit: 5 }).filter(
+    (g) => g.title && g.title !== "(untitled goal)",
+  );
+  if (candidates.length > 0) {
+    try {
+      const reply = await llm(PROMPTS.match(candidates, prompt), { maxTokens: 30 });
+      const token = reply.trim().split(/\s+/)[0]?.replace(/[^\w]/g, "");
+      if (token && token !== "new") {
+        const matched = candidates.find((g) => g.id === token);
+        if (matched) goal = attachSessionToGoal(matched.id, sessionId);
+      }
+    } catch {
+      // ignore — fall through to create
+    }
+  }
+  if (!goal) goal = getActiveGoalForSession(sessionId, projectDir);
+}
+
 const tree = readTree(goal.id);
 const prior = findFrontier(tree);
 const { kind, pivot_signal } = classifyTurn(prompt, prior);
