@@ -3,7 +3,8 @@ import { createServer } from "node:http";
 import { readFileSync, existsSync, statSync, watch } from "node:fs";
 import { join, extname, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readIndex, readTree, readMeta, PATHS } from "../lib/store.mjs";
+import { readIndex, readTree, readMeta, writeMeta, writeIndex, setSummary, PATHS } from "../lib/store.mjs";
+import { llm, PROMPTS, truncWords } from "../lib/llm.mjs";
 
 const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const PUBLIC_DIR = join(__dirname, "public");
@@ -20,6 +21,16 @@ const MIME = {
 };
 
 const sseClients = new Set();
+const inFlight = new Map(); // dedupe concurrent LLM calls keyed by "kind:id"
+
+function once(key, fn) {
+  if (inFlight.has(key)) return inFlight.get(key);
+  const p = Promise.resolve()
+    .then(fn)
+    .finally(() => inFlight.delete(key));
+  inFlight.set(key, p);
+  return p;
+}
 
 function sendJson(res, data, status = 200) {
   res.writeHead(status, { "content-type": "application/json" });
@@ -43,9 +54,60 @@ function serveStatic(req, res, urlPath) {
   res.end(readFileSync(file));
 }
 
-function handleApi(req, res, urlPath) {
+async function handleApi(req, res, urlPath) {
   if (urlPath === "/api/goals") {
     return sendJson(res, readIndex());
+  }
+  let mm = urlPath.match(/^\/api\/goals\/([^/]+)\/title$/);
+  if (mm && req.method === "POST") {
+    const goalId = mm[1];
+    try {
+      const title = await once(`title:${goalId}`, async () => {
+        const meta = readMeta(goalId);
+        if (!meta) throw new Error("goal not found");
+        if (meta.title && meta.title !== "(untitled goal)") return meta.title;
+        const tree = readTree(goalId);
+        const first = tree.nodes[0];
+        if (!first) return meta.title;
+        const text = first.raw_meta?.user_prompt_preview || "";
+        const raw = await llm(PROMPTS.title(text), { maxTokens: 40 });
+        const cleaned = truncWords(raw.replace(/^["']|["']$/g, ""), 8);
+        meta.title = cleaned || meta.title;
+        writeMeta(goalId, meta);
+        const idx = readIndex();
+        const g = idx.goals.find((x) => x.id === goalId);
+        if (g) {
+          g.title = meta.title;
+          writeIndex(idx);
+        }
+        return meta.title;
+      });
+      return sendJson(res, { title });
+    } catch (e) {
+      return sendJson(res, { error: String(e.message || e) }, 500);
+    }
+  }
+  mm = urlPath.match(/^\/api\/nodes\/([^/]+)\/summary$/);
+  if (mm && req.method === "POST") {
+    const nodeId = mm[1];
+    const goalId = req.headers["x-goal-id"];
+    if (!goalId) return sendJson(res, { error: "x-goal-id header required" }, 400);
+    try {
+      const summary = await once(`summary:${goalId}:${nodeId}`, async () => {
+        const tree = readTree(goalId);
+        const node = tree.nodes.find((n) => n.id === nodeId);
+        if (!node) throw new Error("node not found");
+        if (node.summary) return node.summary;
+        const text = node.raw_meta?.user_prompt_preview || "";
+        const raw = await llm(PROMPTS.summary(text), { maxTokens: 80 });
+        const cleaned = truncWords(raw, 20);
+        setSummary(goalId, nodeId, cleaned);
+        return cleaned;
+      });
+      return sendJson(res, { summary });
+    } catch (e) {
+      return sendJson(res, { error: String(e.message || e) }, 500);
+    }
   }
   let m = urlPath.match(/^\/api\/goals\/([^/]+)\/tree$/);
   if (m) {
@@ -113,7 +175,13 @@ function startWatcher() {
 const server = createServer((req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
   const path = url.pathname;
-  if (path.startsWith("/api/")) return handleApi(req, res, path);
+  if (path.startsWith("/api/")) {
+    return handleApi(req, res, path).catch((e) => {
+      try {
+        sendJson(res, { error: String(e.message || e) }, 500);
+      } catch {}
+    });
+  }
   return serveStatic(req, res, path);
 });
 

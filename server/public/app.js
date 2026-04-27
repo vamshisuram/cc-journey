@@ -126,6 +126,21 @@ async function renderHome() {
   }
   wrap.appendChild(list);
   view.appendChild(wrap);
+
+  for (const g of sorted) {
+    if (g.title === "(untitled goal)" && g.node_count > 0) {
+      fetch(`/api/goals/${g.id}/title`, { method: "POST" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => {
+          if (!d?.title) return;
+          const card = list.querySelector(`a[href="#/goal/${g.id}"] .title`);
+          if (card) {
+            card.firstChild.textContent = d.title;
+          }
+        })
+        .catch(() => {});
+    }
+  }
 }
 
 // --- goal view
@@ -176,6 +191,42 @@ async function renderGoal() {
     const node = tree.nodes.find((n) => n.id === state.selectedNodeId);
     if (node) body.appendChild(renderDetail(node));
   }
+
+  fillSummariesLazy(tree);
+}
+
+const summaryInflight = new Set();
+async function fillSummariesLazy(tree) {
+  const need = tree.nodes.filter((n) => !n.summary);
+  const concurrency = 3;
+  const queue = [...need];
+  async function worker() {
+    while (queue.length) {
+      const n = queue.shift();
+      const key = `${state.goalId}:${n.id}`;
+      if (summaryInflight.has(key)) continue;
+      summaryInflight.add(key);
+      try {
+        const r = await fetch(`/api/nodes/${n.id}/summary`, {
+          method: "POST",
+          headers: { "x-goal-id": state.goalId },
+        });
+        if (!r.ok) continue;
+        const { summary } = await r.json();
+        if (!summary) continue;
+        n.summary = summary;
+        if (state.cy) {
+          const el = state.cy.getElementById(n.id);
+          if (el && el.length) el.data("label", summary);
+        }
+        const tlText = document.querySelector(`.timeline-row[data-node="${n.id}"] .text-label`);
+        if (tlText) tlText.textContent = summary;
+      } catch {} finally {
+        summaryInflight.delete(key);
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: concurrency }, worker));
 }
 
 function tabBtn(name, label) {
@@ -308,6 +359,7 @@ function renderTimeline(tree) {
       "div",
       {
         class: "timeline-row" + (n.kind === "deadend" ? " deadend" : ""),
+        "data-node": n.id,
       },
       [
         el("div", { class: "ts" }, fmtTs(n.timestamp)),
@@ -329,7 +381,7 @@ function renderTimeline(tree) {
             },
           },
           [
-            shortSummary(n),
+            el("span", { class: "text-label" }, shortSummary(n)),
             n.deadend_reason
               ? el("span", { class: "reason" }, "reason: " + n.deadend_reason)
               : null,
