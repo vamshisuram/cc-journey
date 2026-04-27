@@ -1,0 +1,32 @@
+:root {
+  color-scheme: light dark;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  line-height: 1.5;
+}
+body {
+  max-width: 960px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.muted {
+  opacity: 0.6;
+}
+section {
+  margin-top: 2rem;
+}
+h2 {
+  font-size: 1rem;
+  margin-bottom: 0.5rem;
+}
+pre {
+  background: rgba(127, 127, 127, 0.1);
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
