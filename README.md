@@ -4,7 +4,7 @@ A Claude Code plugin that captures every prompt as a node in a **tree of convers
 
 Anchored to **goals** (not sessions), so a journey can span many conversations, projects, and days.
 
-![mindmap screenshot](./docs/mindmap.png) <!-- optional -->
+> ✨ **Status:** v0.4 — works end-to-end. Install from the GitHub marketplace below.
 
 ## Why
 
@@ -80,23 +80,41 @@ All optional — sane defaults out of the box.
 Slash commands accept `KEY=VALUE` overrides:
 
 ```
-/journey-serve CLAUDE_PLUGIN_DATA=/tmp/some-other-data JOURNEY_PORT=8080
+/journey:journey-serve CLAUDE_PLUGIN_DATA=/tmp/some-other-data JOURNEY_PORT=8080
 ```
+
+## Privacy
+
+- **All data stays on your machine.** Captured prompts, the goal tree, and per-node summaries are written to `${CLAUDE_PLUGIN_DATA}` — the plugin never phones home.
+- **LLM calls are opt-in.** Goal titling, lazy summaries, soft-pivot classification, and cross-conversation matching all need an LLM. Two ways to enable:
+  - **Anthropic API** — set `ANTHROPIC_API_KEY`. Each call is a small Haiku request (typically <100 tokens out).
+  - **`claude` CLI** — if no API key is set, the plugin falls back to spawning `claude -p`, which reuses your existing Claude Code auth.
+- **No LLM available?** The plugin still works — it just falls back to heuristics (regex pivot detection, first-15-words summaries, untitled goals) and prints nothing if calls fail. Hooks never break a turn on LLM errors.
+- **Stored content includes the first ~200 chars of each prompt.** Full transcripts are *not* duplicated — the plugin keeps a pointer to Claude Code's transcript and reads from it on demand.
+
+## Performance / cost notes
+
+- **Per-turn capture is near-zero overhead** (write a JSON node + maybe a regex test).
+- **First turn of a brand-new goal** triggers up to two LLM calls — one for cross-conversation matching, one for the goal title — so it can add 1–3 s to that single turn. Every subsequent turn skips both.
+- **Soft-pivot LLM-assist** only fires on turns containing hint words (`but`, `however`, `actually`, `hmm`, `alternatively`, …). Most turns stay regex-only at zero LLM cost.
+- **Summaries are lazy.** Tokens are spent only on nodes you actually open in a view. Each summary is cached on disk after first generation.
 
 ## Slash commands
 
+All commands are namespaced under `journey:` after install.
+
 | Command | What it does |
 |---|---|
-| `/journey` | ASCII mindmap of the active goal in the terminal |
-| `/journey-timeline` | Chronological list of all turns in the active goal |
-| `/journey-back [N]` | The last N turns (defaults to 5) — "what did I tell you N pings ago" |
-| `/journey-goals` | List all known goals; active one marked `*` |
-| `/journey-serve` | Start the local web UI ([http://localhost:7777](http://localhost:7777)) |
-| `/journey-stop` | Stop the local web UI |
+| `/journey:journey` | ASCII mindmap of the active goal in the terminal |
+| `/journey:journey-timeline` | Chronological list of all turns in the active goal |
+| `/journey:journey-back [N]` | The last N turns (defaults to 5) — "what did I tell you N pings ago" |
+| `/journey:journey-goals` | List all known goals; active one marked `*` |
+| `/journey:journey-serve` | Start the local web UI ([http://localhost:7777](http://localhost:7777)) |
+| `/journey:journey-stop` | Stop the local web UI |
 
 ## Browser UI
 
-Run `/journey-serve` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
+Run `/journey:journey-serve` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
 
 - **Homepage**: list of all goals across all projects, most-recently-active highlighted.
 - **Goal view**: Cytoscape mindmap with kind-coded bubbles (root / continuation / pivot / dead-end / frontier).
