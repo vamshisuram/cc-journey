@@ -373,12 +373,21 @@ function renderMindmap(host, tree) {
     }
   });
 
-  // Fit the tree on first paint, with a little padding so the bubbles
-  // aren't right against the edges.
+  // Fit the tree on first paint. Cap zoom to keep small trees from
+  // looking comically large, then re-center so the cap doesn't push
+  // the tree off-screen.
   state.cy.ready(() => {
-    state.cy.fit(undefined, 40);
+    state.cy.fit(undefined, 50);
     if (state.cy.zoom() > 1.2) state.cy.zoom(1.2);
+    state.cy.center();
   });
+
+  // Cytoscape doesn't auto-respond to its container resizing (e.g. when
+  // the detail panel opens/closes). Observe and tell it.
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(() => state.cy?.resize());
+    ro.observe(host);
+  }
 
   attachMinimap(host, state.cy);
   attachLegend(host);
@@ -417,10 +426,14 @@ function attachMinimap(host, cy) {
   function sizeCanvas() {
     const rect = mm.getBoundingClientRect();
     if (rect.width === 0 || rect.height === 0) return false;
-    mm.width = rect.width * dpr;
-    mm.height = rect.height * dpr;
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(dpr, dpr);
+    const targetW = Math.round(rect.width * dpr);
+    const targetH = Math.round(rect.height * dpr);
+    if (mm.width !== targetW || mm.height !== targetH) {
+      mm.width = targetW;
+      mm.height = targetH;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+    }
     return true;
   }
 
@@ -509,8 +522,14 @@ function attachMinimap(host, cy) {
     dragging = false;
   });
 
+  let drawScheduled = false;
   function safeDraw() {
-    if (sizeCanvas()) draw();
+    if (drawScheduled) return;
+    drawScheduled = true;
+    requestAnimationFrame(() => {
+      drawScheduled = false;
+      if (sizeCanvas()) draw();
+    });
   }
   cy.on("viewport", safeDraw);
   cy.on("layoutstop add remove data", safeDraw);
