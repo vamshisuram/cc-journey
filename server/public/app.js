@@ -294,26 +294,26 @@ function renderMindmap(host, tree) {
           "border-color": (e) => KIND_COLOR[e.data("kind")] || theme.border,
           width: "label",
           height: "label",
-          padding: "10px",
+          padding: "8px",
           label: "data(label)",
           color: theme.text,
-          "font-size": "12px",
+          "font-size": "13px",
           "font-family":
             "ui-sans-serif, -apple-system, system-ui, sans-serif",
           "text-valign": "center",
           "text-halign": "center",
           "text-wrap": "wrap",
-          "text-max-width": "240px",
-          "line-height": 1.35,
+          "text-max-width": "170px",
+          "line-height": 1.3,
         },
       },
       {
         selector: 'node[kind = "root"]',
         style: {
           "font-weight": 600,
-          "font-size": "13px",
+          "font-size": "14px",
           "border-width": 3,
-          padding: "12px",
+          padding: "10px",
         },
       },
       {
@@ -356,8 +356,8 @@ function renderMindmap(host, tree) {
     layout: {
       name: "breadthfirst",
       directed: true,
-      spacingFactor: 1.3,
-      padding: 40,
+      spacingFactor: 0.55,
+      padding: 30,
       nodeDimensionsIncludeLabels: true,
     },
   });
@@ -371,6 +371,13 @@ function renderMindmap(host, tree) {
       state.selectedNodeId = null;
       renderGoal();
     }
+  });
+
+  // Fit the tree on first paint, with a little padding so the bubbles
+  // aren't right against the edges.
+  state.cy.ready(() => {
+    state.cy.fit(undefined, 40);
+    if (state.cy.zoom() > 1.2) state.cy.zoom(1.2);
   });
 
   attachMinimap(host, state.cy);
@@ -404,16 +411,18 @@ function attachMinimap(host, cy) {
   host.appendChild(el("div", { class: "minimap-label" }, "minimap"));
   const mm = document.createElement("canvas");
   mm.className = "minimap";
+  host.appendChild(mm);
+  const ctx = mm.getContext("2d");
   const dpr = window.devicePixelRatio || 1;
   function sizeCanvas() {
     const rect = mm.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return false;
     mm.width = rect.width * dpr;
     mm.height = rect.height * dpr;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    return true;
   }
-  host.appendChild(mm);
-  sizeCanvas();
-  const ctx = mm.getContext("2d");
-  ctx.scale(dpr, dpr);
 
   function draw() {
     const rect = mm.getBoundingClientRect();
@@ -500,15 +509,24 @@ function attachMinimap(host, cy) {
     dragging = false;
   });
 
-  cy.on("viewport", draw);
-  cy.on("layoutstop add remove data", draw);
-  setTimeout(draw, 50);
-  window.addEventListener("resize", () => {
-    sizeCanvas();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(dpr, dpr);
-    draw();
+  function safeDraw() {
+    if (sizeCanvas()) draw();
+  }
+  cy.on("viewport", safeDraw);
+  cy.on("layoutstop add remove data", safeDraw);
+
+  // Initial sizing — wait for the host's CSS layout to settle so
+  // getBoundingClientRect returns real dimensions (not 0×0).
+  requestAnimationFrame(() => {
+    requestAnimationFrame(safeDraw);
   });
+
+  // Re-size on container resize (window resize, side-panel toggle, etc.)
+  if (typeof ResizeObserver !== "undefined") {
+    const ro = new ResizeObserver(safeDraw);
+    ro.observe(mm);
+  }
+  window.addEventListener("resize", safeDraw);
 }
 
 function renderTimeline(tree) {
