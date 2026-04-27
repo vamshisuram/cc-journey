@@ -347,6 +347,142 @@ function renderMindmap(host, tree) {
       renderGoal();
     }
   });
+
+  attachMinimap(host, state.cy);
+  attachLegend(host);
+}
+
+function attachLegend(host) {
+  const items = [
+    ["root", "Root"],
+    ["continuation", "Continuation"],
+    ["pivot", "Pivot"],
+    ["deadend", "Dead-end"],
+  ];
+  const legend = el(
+    "div",
+    { class: "legend" },
+    items.map(([k, l]) =>
+      el("div", { class: "row" }, [
+        el("span", {
+          class: "swatch",
+          style: `background:${KIND_COLOR[k]}`,
+        }),
+        l,
+      ]),
+    ),
+  );
+  host.appendChild(legend);
+}
+
+function attachMinimap(host, cy) {
+  host.appendChild(el("div", { class: "minimap-label" }, "minimap"));
+  const mm = document.createElement("canvas");
+  mm.className = "minimap";
+  const dpr = window.devicePixelRatio || 1;
+  function sizeCanvas() {
+    const rect = mm.getBoundingClientRect();
+    mm.width = rect.width * dpr;
+    mm.height = rect.height * dpr;
+  }
+  host.appendChild(mm);
+  sizeCanvas();
+  const ctx = mm.getContext("2d");
+  ctx.scale(dpr, dpr);
+
+  function draw() {
+    const rect = mm.getBoundingClientRect();
+    const W = rect.width;
+    const H = rect.height;
+    const bb = cy.elements().boundingBox();
+    if (!bb || bb.w === 0) return;
+    const pad = 8;
+    const scale = Math.min((W - 2 * pad) / bb.w, (H - 2 * pad) / bb.h);
+    const offX = pad - bb.x1 * scale + (W - 2 * pad - bb.w * scale) / 2;
+    const offY = pad - bb.y1 * scale + (H - 2 * pad - bb.h * scale) / 2;
+
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 0.6;
+    cy.edges().forEach((e) => {
+      const s = e.source().position();
+      const t = e.target().position();
+      ctx.beginPath();
+      ctx.moveTo(s.x * scale + offX, s.y * scale + offY);
+      ctx.lineTo(t.x * scale + offX, t.y * scale + offY);
+      ctx.stroke();
+    });
+
+    cy.nodes().forEach((n) => {
+      const p = n.position();
+      const k = n.data("kind");
+      ctx.fillStyle = KIND_COLOR[k] || "#7aa2f7";
+      ctx.globalAlpha = k === "deadend" ? 0.5 : 1;
+      ctx.beginPath();
+      ctx.arc(p.x * scale + offX, p.y * scale + offY, k === "root" ? 3 : 2, 0, Math.PI * 2);
+      ctx.fill();
+      if (n.data("frontier")) {
+        ctx.strokeStyle = "#9ece6a";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    });
+    ctx.globalAlpha = 1;
+
+    const ext = cy.extent();
+    ctx.strokeStyle = "rgba(122,162,247,0.8)";
+    ctx.fillStyle = "rgba(122,162,247,0.12)";
+    ctx.lineWidth = 1;
+    const rx = ext.x1 * scale + offX;
+    const ry = ext.y1 * scale + offY;
+    const rw = (ext.x2 - ext.x1) * scale;
+    const rh = (ext.y2 - ext.y1) * scale;
+    ctx.fillRect(rx, ry, rw, rh);
+    ctx.strokeRect(rx, ry, rw, rh);
+  }
+
+  function panFromEvent(e) {
+    const rect = mm.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const bb = cy.elements().boundingBox();
+    if (!bb || bb.w === 0) return;
+    const pad = 8;
+    const W = rect.width;
+    const H = rect.height;
+    const scale = Math.min((W - 2 * pad) / bb.w, (H - 2 * pad) / bb.h);
+    const offX = pad - bb.x1 * scale + (W - 2 * pad - bb.w * scale) / 2;
+    const offY = pad - bb.y1 * scale + (H - 2 * pad - bb.h * scale) / 2;
+    const worldX = (mx - offX) / scale;
+    const worldY = (my - offY) / scale;
+    const z = cy.zoom();
+    cy.pan({
+      x: -worldX * z + cy.width() / 2,
+      y: -worldY * z + cy.height() / 2,
+    });
+  }
+  let dragging = false;
+  mm.addEventListener("mousedown", (e) => {
+    dragging = true;
+    panFromEvent(e);
+  });
+  mm.addEventListener("mousemove", (e) => {
+    if (dragging) panFromEvent(e);
+  });
+  window.addEventListener("mouseup", () => {
+    dragging = false;
+  });
+
+  cy.on("viewport", draw);
+  cy.on("layoutstop add remove data", draw);
+  setTimeout(draw, 50);
+  window.addEventListener("resize", () => {
+    sizeCanvas();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(dpr, dpr);
+    draw();
+  });
 }
 
 function renderTimeline(tree) {

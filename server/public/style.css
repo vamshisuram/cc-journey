@@ -204,6 +204,58 @@ main {
   width: 100%;
   height: 100%;
   background: var(--bg);
+  position: relative;
+}
+.minimap {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 220px;
+  height: 150px;
+  background: rgba(22, 24, 29, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: crosshair;
+  backdrop-filter: blur(4px);
+  z-index: 5;
+}
+.minimap-label {
+  position: absolute;
+  right: 18px;
+  bottom: 168px;
+  font-family: ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 5;
+  pointer-events: none;
+}
+.legend {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  background: rgba(22, 24, 29, 0.85);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  display: grid;
+  gap: 0.25rem;
+  backdrop-filter: blur(4px);
+  z-index: 5;
+}
+.legend .row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.legend .swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
 }
 .detail {
   border-left: 1px solid var(--border);
