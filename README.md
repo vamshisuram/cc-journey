@@ -25,8 +25,8 @@ Journey captures this automatically as a **mindmap + timeline** of your conversa
 - **Goals span conversations.** Same conversation = same goal. New conversation? A small LLM call asks "does this continue any recent goal?" and matches if so.
 - **Lazy LLM summaries.** Each node gets a one-line, ≤20-word summary — generated on demand when you actually look at it, then cached.
 - **Two views, same data.**
-  - Terminal: `/journey`, `/journey-timeline`, `/journey-back [N]`, `/journey-goals`
-  - Browser: `/journey-serve` opens a local web UI with a Cytoscape mindmap, click-to-detail, draggable minimap, timeline tab, and live-update SSE.
+  - **Browser** (default): `/journey:journey` starts a local web UI with a Cytoscape mindmap, draggable minimap, timeline tab, click-to-detail, and live SSE updates.
+  - **Terminal**: `/journey:mindmap`, `/journey:timeline`, `/journey:back [N]`, `/journey:goals` for quick at-a-glance views without leaving the CLI.
 
 ## Install
 
@@ -82,7 +82,7 @@ All optional — sane defaults out of the box.
 Slash commands accept `KEY=VALUE` overrides:
 
 ```
-/journey:journey-serve CLAUDE_PLUGIN_DATA=/tmp/some-other-data JOURNEY_PORT=8080
+/journey:journey CLAUDE_PLUGIN_DATA=/tmp/some-other-data JOURNEY_PORT=8080
 ```
 
 ## Privacy
@@ -107,16 +107,23 @@ All commands are namespaced under `journey:` after install.
 
 | Command | What it does |
 |---|---|
-| `/journey:journey` | ASCII mindmap of the active goal in the terminal |
-| `/journey:journey-timeline` | Chronological list of all turns in the active goal |
-| `/journey:journey-back [N]` | The last N turns (defaults to 5) — "what did I tell you N pings ago" |
-| `/journey:journey-goals` | List all known goals; active one marked `*` |
-| `/journey:journey-serve` | Start the local web UI ([http://localhost:7777](http://localhost:7777)) |
-| `/journey:journey-stop` | Stop the local web UI |
+| `/journey:journey` | **Start the web UI** (default action — mindmap, timeline, goals all live in the browser at http://localhost:7777) |
+| `/journey:serve` | Same as above (alias) |
+| `/journey:stop` | Stop the local web UI |
+| `/journey:goals` | Terminal: list all known goals (active marked `*`) |
+| `/journey:mindmap` | Terminal: ASCII mindmap of the active goal |
+| `/journey:timeline` | Terminal: chronological list of all turns in the active goal |
+| `/journey:back [N]` | Terminal: last N turns (defaults to 5) — "what did I tell you N pings ago" |
+
+All commands accept `KEY=VALUE` overrides, e.g.:
+
+```
+/journey:journey CLAUDE_PLUGIN_DATA=/tmp/journey-demo JOURNEY_PORT=8080
+```
 
 ## Browser UI
 
-Run `/journey:journey-serve` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
+Run `/journey:journey` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
 
 ### Homepage — every goal you've worked on
 
