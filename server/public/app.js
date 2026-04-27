@@ -535,7 +535,17 @@ function attachMinimap(host, cy) {
   }
 
   let dragging = false;
+
+  // Stop the event from bubbling to the cy container (which would
+  // also start a cy pan/box-select), and prevent the browser's default
+  // selection/drag behavior on the canvas.
+  function consume(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
   mm.addEventListener("mousedown", (e) => {
+    consume(e);
     const g = mmGeom();
     if (g) {
       const mx = e.clientX - g.rect.left;
@@ -553,11 +563,22 @@ function attachMinimap(host, cy) {
       }
     }
     dragging = true;
+    if (mm.setPointerCapture && e.pointerId != null) {
+      try { mm.setPointerCapture(e.pointerId); } catch {}
+    }
     panFromEvent(e);
   });
   mm.addEventListener("mousemove", (e) => {
-    if (dragging) panFromEvent(e);
+    if (!dragging) return;
+    consume(e);
+    panFromEvent(e);
   });
+  // Block wheel/contextmenu/click bubbling too so cy never sees them
+  // while the cursor is over the minimap.
+  mm.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });
+  mm.addEventListener("click", (e) => e.stopPropagation());
+  mm.addEventListener("contextmenu", (e) => e.stopPropagation());
+
   window.addEventListener("mouseup", () => {
     dragging = false;
     dragOffset = null;
