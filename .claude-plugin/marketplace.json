@@ -14,7 +14,7 @@
       "source": "./",
       "description": "A Claude Code plugin that captures every prompt as a node in a tree of conversation states. Pivots branch the tree; dead-ends auto-explain. Goal-anchored, spans sessions. Browser UI with Cytoscape mindmap + draggable minimap.",
       "version": "0.4.0",
-      "category": ["productivity", "visualization", "memory"]
+      "category": "productivity"
     }
   ]
 }
