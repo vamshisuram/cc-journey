@@ -4,6 +4,8 @@ A Claude Code plugin that captures every prompt as a node in a **tree of convers
 
 Anchored to **goals** (not sessions), so a journey can span many conversations, projects, and days.
 
+![Mindmap of an OAuth migration with three abandoned branches and reasons](docs/mindmap-tree.png)
+
 > ✨ **Status:** v0.4 — works end-to-end. Install from the GitHub marketplace below.
 
 ## Why
@@ -116,12 +118,25 @@ All commands are namespaced under `journey:` after install.
 
 Run `/journey:journey-serve` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
 
-- **Homepage**: list of all goals across all projects, most-recently-active highlighted.
-- **Goal view**: Cytoscape mindmap with kind-coded bubbles (root / continuation / pivot / dead-end / frontier).
-- **Click a node**: detail panel with kind / time / pivot signal / dead-end reason / prompt preview.
-- **Toggle Timeline**: same nodes, chronological.
-- **Minimap** (bottom-right): drag the viewport rectangle to pan; click outside the rectangle to jump.
-- **Live updates**: SSE pushes from the file watcher → view re-renders when new turns are captured.
+### Homepage — every goal you've worked on
+
+Most-recently-active goal is highlighted at the top. One card per goal with node count, pivot count, and dead-end count at a glance.
+
+![Goals homepage with the active goal highlighted](docs/goals.png)
+
+### Goal view — interactive mindmap
+
+Each turn is a kind-coded bubble: **root** (purple), **continuation** (blue), **pivot** (orange), **dead-end** (faded red, dashed), and the live frontier glows green. Click a node for kind / time / pivot signal / dead-end reason / prompt preview. Drag the minimap viewport to pan, click outside it to jump.
+
+![Mindmap of the OAuth migration goal showing three abandoned branches](docs/mindmap-tree.png)
+
+### Timeline — same nodes, chronological
+
+Useful for "when did we pivot" and "what happened today." Dead-ends are line-through with the reason inline.
+
+![Chronological timeline of goal turns with dead-end reasons](docs/timeline.png)
+
+Live updates: SSE pushes from the file watcher → all open views re-render when new turns are captured.
 
 ## Try it without Claude Code (demo data)
 
