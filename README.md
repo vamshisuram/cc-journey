@@ -25,8 +25,8 @@ Journey captures this automatically as a **mindmap + timeline** of your conversa
 - **Goals span conversations.** Same conversation = same goal. New conversation? A small LLM call asks "does this continue any recent goal?" and matches if so.
 - **Lazy LLM summaries.** Each node gets a one-line, ≤20-word summary — generated on demand when you actually look at it, then cached.
 - **Two views, same data.**
-  - **Browser** (default): `/journey:open` starts a local web UI with a Cytoscape mindmap, draggable minimap, timeline tab, click-to-detail, and live SSE updates.
-  - **Terminal**: `/journey:mindmap`, `/journey:timeline`, `/journey:back [N]`, `/journey:goals` for quick at-a-glance views without leaving the CLI.
+  - **Browser** (default): `/cc-journey:open` starts a local web UI with a Cytoscape mindmap, draggable minimap, timeline tab, click-to-detail, and live SSE updates.
+  - **Terminal**: `/cc-journey:mindmap`, `/cc-journey:timeline`, `/cc-journey:back [N]`, `/cc-journey:goals` for quick at-a-glance views without leaving the CLI.
 
 ## Install
 
@@ -36,11 +36,11 @@ In Claude Code, run:
 
 ```
 /plugin marketplace add vamshisuram/cc
-/plugin install journey
+/plugin install cc-journey
 /reload-plugins
 ```
 
-That's it — three commands. After `/reload-plugins`, hooks and slash commands are live: every prompt you send is captured, and `/journey:open` opens the browser view.
+That's it — three commands. After `/reload-plugins`, hooks and slash commands are live: every prompt you send is captured, and `/cc-journey:open` opens the browser view.
 
 > Canonical docs: https://code.claude.com/docs/en/discover-plugins and https://code.claude.com/docs/en/plugin-marketplaces
 
@@ -54,7 +54,7 @@ Then in Claude Code:
 
 ```
 /plugin marketplace add ~/code/cc-journey
-/plugin install journey
+/plugin install cc-journey
 /reload-plugins
 ```
 
@@ -63,7 +63,7 @@ Edits to the cloned repo become live after another `/reload-plugins`.
 ### Uninstall
 
 ```
-/plugin uninstall journey
+/plugin uninstall cc-journey
 /plugin marketplace remove cc
 ```
 
@@ -82,7 +82,7 @@ All optional — sane defaults out of the box.
 Slash commands accept `KEY=VALUE` overrides:
 
 ```
-/journey:open CLAUDE_PLUGIN_DATA=/tmp/some-other-data JOURNEY_PORT=8080
+/cc-journey:open CLAUDE_PLUGIN_DATA=/tmp/some-other-data JOURNEY_PORT=8080
 ```
 
 ## Privacy
@@ -103,26 +103,26 @@ Slash commands accept `KEY=VALUE` overrides:
 
 ## Slash commands
 
-All commands are namespaced under `journey:` after install.
+All commands are namespaced under `cc-journey:` after install.
 
 | Command | What it does |
 |---|---|
-| `/journey:open` | **Open the web UI** (mindmap, timeline, goals all live in the browser at http://localhost:7777) |
-| `/journey:stop` | Stop the local web UI |
-| `/journey:goals` | Terminal: list all known goals (active marked `*`) |
-| `/journey:mindmap` | Terminal: ASCII mindmap of the active goal |
-| `/journey:timeline` | Terminal: chronological list of all turns in the active goal |
-| `/journey:back [N]` | Terminal: last N turns (defaults to 5) — "what did I tell you N pings ago" |
+| `/cc-journey:open` | **Open the web UI** (mindmap, timeline, goals all live in the browser at http://localhost:7777) |
+| `/cc-journey:stop` | Stop the local web UI |
+| `/cc-journey:goals` | Terminal: list all known goals (active marked `*`) |
+| `/cc-journey:mindmap` | Terminal: ASCII mindmap of the active goal |
+| `/cc-journey:timeline` | Terminal: chronological list of all turns in the active goal |
+| `/cc-journey:back [N]` | Terminal: last N turns (defaults to 5) — "what did I tell you N pings ago" |
 
 All commands accept `KEY=VALUE` overrides, e.g.:
 
 ```
-/journey:open CLAUDE_PLUGIN_DATA=/tmp/journey-demo JOURNEY_PORT=8080
+/cc-journey:open CLAUDE_PLUGIN_DATA=/tmp/journey-demo JOURNEY_PORT=8080
 ```
 
 ## Browser UI
 
-Run `/journey:open` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
+Run `/cc-journey:open` (or `node lib/server-control.mjs start` for local dev), then open http://localhost:7777.
 
 ### Homepage — every goal you've worked on
 
