@@ -35,26 +35,26 @@ Journey captures this automatically as a **mindmap + timeline** of your conversa
 In Claude Code, run:
 
 ```
-/plugin marketplace add vamshisuram/claude-journey
-/plugin install journey@claude-journey
+/plugin marketplace add vamshisuram/cc
+/plugin install journey
 /reload-plugins
 ```
 
-That's it — three commands. After `/reload-plugins`, hooks and slash commands are live: every prompt you send is captured, and `/journey-serve` opens the browser view.
+That's it — three commands. After `/reload-plugins`, hooks and slash commands are live: every prompt you send is captured, and `/journey:open` opens the browser view.
 
 > Canonical docs: https://code.claude.com/docs/en/discover-plugins and https://code.claude.com/docs/en/plugin-marketplaces
 
 ### From a local clone (for development)
 
 ```sh
-git clone https://github.com/vamshisuram/claude-journey ~/code/claude-journey
+git clone https://github.com/vamshisuram/cc-journey ~/code/cc-journey
 ```
 
 Then in Claude Code:
 
 ```
-/plugin marketplace add ~/code/claude-journey
-/plugin install journey@claude-journey
+/plugin marketplace add ~/code/cc-journey
+/plugin install journey
 /reload-plugins
 ```
 
@@ -63,8 +63,8 @@ Edits to the cloned repo become live after another `/reload-plugins`.
 ### Uninstall
 
 ```
-/plugin uninstall journey@claude-journey
-/plugin marketplace remove claude-journey
+/plugin uninstall journey
+/plugin marketplace remove cc
 ```
 
 Your captured journeys remain on disk (under the plugin's data dir) until you delete them manually.
@@ -147,8 +147,8 @@ Live updates: SSE pushes from the file watcher → all open views re-render when
 ## Try it without Claude Code (demo data)
 
 ```sh
-git clone https://github.com/vamshisuram/claude-journey
-cd claude-journey
+git clone https://github.com/vamshisuram/cc-journey
+cd cc-journey
 
 # Seed three realistic goals (30 nodes total, branches and dead-ends)
 node scripts/seed-demo.mjs CLAUDE_PLUGIN_DATA=/tmp/journey-demo
@@ -196,7 +196,7 @@ Source of truth is the JSON tree on disk. Terminal renderer, browser server, and
 ## Repo layout
 
 ```
-claude-journey/
+cc-journey/
 ├── .claude-plugin/plugin.json   # plugin manifest
 ├── DISCUSSION.md                # design rationale (the conversation that shaped this)
 ├── hooks/
